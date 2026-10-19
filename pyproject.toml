@@ -1,0 +1,48 @@
+[project]
+name = "exlibris-api"
+version = "0.1.0"
+description = "Book tracking API built with FastAPI: personal shelves, reading status, ratings and reviews."
+readme = "README.md"
+authors = [
+    { name = "Jakub Gugała", email = "jg.hpk.solutions@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi[standard]>=0.143.2",
+    "pydantic-settings>=2.16.0",
+    "sqlalchemy>=2.1.4",
+]
+
+[build-system]
+requires = ["uv_build>=0.13.1,<0.14.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "exlibris"
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "B",    # flake8-bugbear
+    "UP",   # pyupgrade
+    "SIM",  # flake8-simplify
+    "FAST", # FastAPI-specific rules
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.7.0",
+    "pytest>=9.1.1",
+    "ruff>=0.17.1",
+]
