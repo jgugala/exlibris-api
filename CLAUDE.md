@@ -13,8 +13,8 @@ Scope and stages: `docs/roadmap.md`. It is the source of truth for what gets bui
 
 ## Workflow
 
-- One stage = one GitHub milestone with issues (`/plan-stage`) = one branch `stage-N-short-name` with a PR to `main` (`/pr`).
-- Implementing a stage or issue goes through `/task-solving-planner`.
+- One stage = one GitHub milestone with issues (`/plan-stage`). One issue = one branch `N-short-name` (e.g. `1-ci-workflow`) = one PR to `main` (`/pr`) with `Closes #N`.
+- Implementing an issue goes through `/task-solving-planner`.
 - Conventional Commits (`feat:`, `fix:`, `chore:`, `docs:`, `test:`, `refactor:`), enforced by a `commit-msg` hook. Issues are referenced as `#N` in the commit body or PR (`Closes #N`), not in the subject. No `Co-Authored-By` or other AI attribution trailers in commits or PRs.
 - Hooks: Ruff formats and lints every edited Python file; the test suite runs when a turn ends with uncommitted changes in `src/` or `tests/` and blocks on failures.
 - Before handing work back, run lint, format and tests (commands below). Work is done when they pass.

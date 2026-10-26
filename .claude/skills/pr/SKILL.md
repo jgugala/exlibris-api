@@ -29,13 +29,13 @@ Re-read the draft as a reviewer would and cut what they would skim past.
 
 ## 3. Confirm, then create
 
-Show title and body and ask for the go-ahead (pushing is visible to others), unless the user already said to just create it.
+Show title and body and ask for the go-ahead (pushing is visible to others).
 
 ```bash
 git push -u origin HEAD
-gh pr create --base main --assignee @me --title "<title>" --body-file <scratchpad>/pr-body.md
+gh pr create --base main --assignee @me --title "<title>" --body-file - < <scratchpad>/pr-body.md
 ```
 
-Write the body to a file in the scratchpad directory so backticks survive. If `gh` cannot read that path (snap confinement), use `--body-file - < <file>`. Reply with the PR URL.
+Write the body to a file in the scratchpad directory so backticks survive. Pass it through stdin (`--body-file -`): `gh` installed as a snap has a private `/tmp` and cannot open files in the scratchpad. Reply with the PR URL.
 
-When the user only wants the description, stop after step 2. For an existing PR, offer `gh pr edit <n> --body-file ...`.
+When the user only wants the description, stop after step 2. For an existing PR, offer `gh pr edit <n> --body-file - < <scratchpad>/pr-body.md`.

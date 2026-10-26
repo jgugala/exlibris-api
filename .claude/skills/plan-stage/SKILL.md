@@ -46,10 +46,10 @@ After approval:
 
 ```bash
 gh api repos/{owner}/{repo}/milestones -f title="Stage N: <name>" -f description="<one line from the roadmap>"   # if missing
-gh issue create --title "<title>" --body-file <scratchpad>/issue-K.md --milestone "Stage N: <name>"
+gh issue create --title "<title>" --body-file - --milestone "Stage N: <name>" < <scratchpad>/issue-K.md
 ```
 
-Write each body to a file in the scratchpad directory so Markdown survives quoting. If the user has a GitHub Projects board, add each issue to it (`gh project item-add <project-number> --owner @me --url <issue-url>`).
+Write each body to a file in the scratchpad directory so Markdown survives quoting. Pass it through stdin (`--body-file -`): `gh` installed as a snap has a private `/tmp` and cannot open files in the scratchpad. Do not add issues to the GitHub Projects board: its auto-add workflow picks them up, and the agent's token has no project permissions.
 
 Reply with a table: issue number, title, URL.
 
