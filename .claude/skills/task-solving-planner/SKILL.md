@@ -1,11 +1,17 @@
 ---
 name: task-solving-planner
-description: Gated approach for implementing a roadmap stage, a GitHub issue, or a non-trivial change in exlibris-api - requirements, API contract, implementation, tests, review, summary. Use whenever the user asks to implement a stage or an issue ("zaimplementuj etap 2", "zrób #12"), build new endpoints, or change behaviour across schemas, models and routers. Do NOT use for typo fixes, config tweaks, docs-only changes, or when the user says to skip planning and just do it.
+description: Gated approach for implementing one GitHub issue, or one non-trivial change without an issue, in exlibris-api - branch, requirements, API contract, implementation, tests, review, summary. Use whenever the user asks to implement an issue ("zrób #12"), the next task of a stage ("zaimplementuj etap 2", "następne issue"), build new endpoints, or change behaviour across schemas, models and routers. Do NOT use for typo fixes, config tweaks, docs-only changes, or when the user says to skip planning and just do it.
 ---
 
 # Task Solving Planner
 
-Understand → agree on the contract → implement → test → review → summarize. Two gates where the user decides; everything between them runs without stopping.
+Branch → understand → agree on the contract → implement → test → review → summarize. Two gates where the user decides; everything between them runs without stopping.
+
+One run handles one issue. When the user names a stage instead, pick the lowest-numbered open issue of its milestone whose dependencies are closed (`gh issue list --milestone "<title>" --state open`) and confirm it with the user before starting.
+
+## 0. Branch
+
+Start from an up-to-date `main` (`git switch main && git pull`). Uncommitted changes → ask whether they belong to this issue before switching. Create the branch `N-short-name` (e.g. `4-create-read-books`).
 
 ## 1. Requirements
 
@@ -53,7 +59,7 @@ Tell the user, briefly and in their language:
 - what the review found and what was fixed,
 - **what FastAPI mechanisms this used and why** (a few sentences — the project is also for learning).
 
-Do not commit unless asked. If the user asks, commit with Conventional Commits and reference the issue (`Closes #N` in the body or PR).
+Then propose the commit: list of files and the message (Conventional Commits, `Closes #N` in the body). Commit only after the user's "ok", then offer `/pr` to open the pull request.
 
 ## Notes
 

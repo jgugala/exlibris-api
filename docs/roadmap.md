@@ -14,9 +14,10 @@ Users create accounts and add books to their shelf by ISBN. Each book on a shelf
 
 ## Stage 1: CRUD and Pydantic
 
-`Book` model (SQLite + SQLAlchemy, synchronous) and `GET/POST/PATCH/DELETE /books`.
+`Book` model (SQLite + SQLAlchemy, synchronous) and `GET/POST/PATCH/DELETE /books`. `Book` is a catalog entry with a globally unique ISBN.
 
 - Path and query parameters.
+- Database session provided through a `get_session` dependency with `yield`.
 - Separate `BookCreate`, `BookUpdate` (all fields optional, for `PATCH`) and `BookRead` schemas.
 - Validation with `Field` (rating 1–5, ISBN length).
 - `response_model`, status codes, `HTTPException` (404, 409 on duplicate ISBN).
@@ -26,13 +27,13 @@ Users create accounts and add books to their shelf by ISBN. Each book on a shelf
 
 Split into `routers/`, `models/`, `schemas/` and `services/`.
 
-- `get_db` dependency with `yield`.
+- Session dependency moved to its own module.
 - Pagination (`skip`/`limit`) and a `BookFilters` class dependency (status, minimum rating, author).
 - `APIRouter` with `prefix` and `tags`, dependency aliases with `Annotated`.
 
 ## Stage 3: Users and authentication
 
-Registration, login returning a JWT, `GET /me`. Books belong to users, so each user sees only their own shelf. `is_admin` flag and an `/admin` router protected as a whole.
+Registration, login returning a JWT, `GET /me`. Books stay a shared catalog; per-user data (reading status, rating, review) moves out of `Book` into per-user tables, starting with a shelf table linking users to books (unique per user and book), so each user sees only their own shelf. `is_admin` flag and an `/admin` router protected as a whole.
 
 - `OAuth2PasswordBearer` and the "Authorize" button in `/docs`.
 - Dependency chain `get_current_user` → `get_admin`; `dependencies=[...]` on the router.
@@ -55,7 +56,7 @@ Adding a book takes only an ISBN; the rest is fetched from Open Library (`https:
 
 ## Stage 6: Testing with dependency overrides
 
-- In-memory SQLite injected via `app.dependency_overrides[get_db]`.
+- In-memory SQLite injected via `app.dependency_overrides[get_session]`.
 - Fake authenticated user instead of real login.
 - Fake Open Library client returning fixed data.
 - Tooling: branch protection on `main`, merges only on green CI.
@@ -90,6 +91,6 @@ Separate project `exlibris-web` (React or Vue + TypeScript + Vite) with an API c
 
 ## Tooling
 
-- Project management: GitHub Projects (Backlog → In progress → Review → Done), one milestone per stage, issues per task, `fixes #N` in PRs.
+- Project management: one milestone per stage, issues per task, `Closes #N` in PRs. A GitHub Projects board (Backlog → In progress → Review → Done) is managed by hand in the browser; built-in workflows add new issues and PRs from this repo and move closed items to Done.
 - Diagrams: Mermaid in the repo (ERD, sequence diagrams), Excalidraw for sketches, draw.io for AWS infrastructure.
-- AI agent: Claude Code with MCP servers where they add value (GitHub, AWS read-only, Terraform, Sentry). CLI tools (`uv`, `gh`, `aws`, `terraform`) run directly. Infrastructure changes only through reviewed Terraform plans; agent credentials are read-only and scoped to this repo.
+- AI agent: Claude Code with MCP servers where they add value (GitHub, AWS read-only, Terraform, Sentry). CLI tools (`uv`, `gh`, `aws`, `terraform`) run directly; `gh` uses a fine-grained token limited to this repository. Infrastructure changes only through reviewed Terraform plans; GitHub credentials are scoped to this repo; cloud credentials (AWS) are read-only.
