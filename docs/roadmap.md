@@ -47,6 +47,7 @@ Adding a book takes only an ISBN; the rest is fetched from Open Library (`https:
 
 - `async def` and `httpx.AsyncClient`, created once in `lifespan` and provided through a dependency.
 - Handling upstream failures (timeout → 502).
+- ISBN normalization on input: strip hyphens and spaces, uppercase `x`, so `978-0-306-40615-7` and `9780306406157` are the same book (a `BeforeValidator` on the `ISBN` type).
 - Optional: move the database to `AsyncSession` with `aiosqlite` and compare the diff.
 
 ## Stage 5: Background tasks and WebSocket
