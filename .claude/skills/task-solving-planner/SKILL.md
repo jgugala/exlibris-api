@@ -48,6 +48,15 @@ Run `uv run pytest` and `uv run ruff check .`. The `pytest-on-stop` hook will bl
 
 Run the `code-review` skill at `high` effort on the change. Fix every must-fix and should-fix finding; if fixes were substantial, review once more (two rounds at most, then report what remains). Do not spawn subagents for this unless the user asks.
 
+After the fixes, show the user a review report before moving on, as a table with one row per finding:
+
+| # | Finding (one line, concrete) | Severity | Decision | What was done / why skipped |
+|---|---|---|---|---|
+| 1 | `GET /books/-2**63-1` returns 500 | bug | ✅ fixed | `Path(ge=1, ...)`, test added |
+| 2 | `SessionDep` alias missing | cleanup | ⏭️ skipped | stage 2 scope |
+
+Severity: `bug` / `test` / `cleanup` / `perf`. Decision: ✅ fixed, ⏭️ skipped (with the reason), ❓ needs the user's call. Never refer to findings by number alone. Mention any second review round and what it found. Any ❓ row or a fix that changes the agreed contract waits for the user; otherwise continue to step 6.
+
 If no review ran, say so in the summary instead of presenting a self-check as a review.
 
 ## 6. Summary — Gate 2
@@ -56,7 +65,7 @@ Tell the user, briefly and in their language:
 - the requirements checklist with ✅ / ❌,
 - files changed, one line each,
 - tests added and the result,
-- what the review found and what was fixed,
+- the review in one line (e.g. "8 findings: 5 fixed, 3 skipped, see the review report"), not repeated in full,
 - **what FastAPI mechanisms this used and why** (a few sentences — the project is also for learning).
 
 Then propose the commit: list of files and the message (Conventional Commits, `Closes #N` in the body). Commit only after the user's "ok", then offer `/pr` to open the pull request.
