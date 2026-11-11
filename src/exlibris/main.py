@@ -10,7 +10,11 @@ from sqlalchemy.orm import Session, sessionmaker
 from exlibris.config import Settings
 from exlibris.database import get_session, init_db
 from exlibris.models import Book, ReadingStatus
-from exlibris.schemas import BookCreate, BookRead
+from exlibris.schemas import BookCreate, BookRead, BookUpdate
+
+# Ids are positive; the upper bound keeps them within SQLite's 64-bit INTEGER, so
+# out-of-range values fail with 422, not 500.
+BookId = Annotated[int, Path(ge=1, le=2**63 - 1)]
 
 
 @asynccontextmanager
@@ -63,13 +67,34 @@ def list_books(
     return session.scalars(query).all()
 
 
-@app.get("/books/{book_id}", response_model=BookRead, tags=["books"])
-def get_book(
-    # The upper bound keeps the id within SQLite's 64-bit INTEGER (422, not 500).
-    book_id: Annotated[int, Path(le=2**63 - 1)],
-    session: Annotated[Session, Depends(get_session)],
-) -> Book:
+def _get_book_or_404(session: Session, book_id: int) -> Book:
     book = session.get(Book, book_id)
     if book is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Book not found")
     return book
+
+
+@app.get("/books/{book_id}", response_model=BookRead, tags=["books"])
+def get_book(book_id: BookId, session: Annotated[Session, Depends(get_session)]) -> Book:
+    return _get_book_or_404(session, book_id)
+
+
+@app.patch("/books/{book_id}", response_model=BookRead, tags=["books"])
+def update_book(
+    book_id: BookId, data: BookUpdate, session: Annotated[Session, Depends(get_session)]
+) -> Book:
+    book = _get_book_or_404(session, book_id)
+    # Only the fields the client sent: an omitted field stays unchanged, an explicit
+    # null clears it (BookUpdate rejects null for the NOT NULL columns).
+    for field, value in data.model_dump(exclude_unset=True).items():
+        setattr(book, field, value)
+    session.commit()
+    session.refresh(book)
+    return book
+
+
+@app.delete("/books/{book_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["books"])
+def delete_book(book_id: BookId, session: Annotated[Session, Depends(get_session)]) -> None:
+    book = _get_book_or_404(session, book_id)
+    session.delete(book)
+    session.commit()
