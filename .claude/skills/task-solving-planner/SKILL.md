@@ -7,11 +7,11 @@ description: Gated approach for implementing one GitHub issue, or one non-trivia
 
 Branch → understand → agree on the contract → implement → test → review → summarize. Two gates where the user decides; everything between them runs without stopping.
 
-One run handles one issue. When the user names a stage instead, pick the lowest-numbered open issue of its milestone whose dependencies are closed (`gh issue list --milestone "<title>" --state open`) and confirm it with the user before starting.
+One run handles one issue. When the user names a stage instead, pick the lowest-numbered open issue of its milestone whose "blocked by" issues are all closed (`gh issue list --milestone "<title>" --state open`; blockers: `gh api graphql -f query='{repository(owner:"<owner>",name:"<repo>"){issue(number:N){blockedBy(first:10){nodes{number state}}}}}'`) and confirm it with the user before starting.
 
 ## 0. Branch
 
-Start from an up-to-date `main` (`git switch main && git pull`). Uncommitted changes → ask whether they belong to this issue before switching. Create the branch `N-short-name` (e.g. `4-create-read-books`).
+Start from an up-to-date `main` (`git switch main && git pull`). Uncommitted changes → ask whether they belong to this issue before switching. Create the branch `N-short-name` (e.g. `4-create-read-books`). Then remind the user to move the issue to "In progress" on the Projects board, with the issue URL: the agent's token has no project access, and no built-in board workflow reacts to a new branch.
 
 ## 1. Requirements
 
