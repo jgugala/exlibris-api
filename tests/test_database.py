@@ -11,7 +11,8 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from exlibris.config import Settings
-from exlibris.database import get_session, init_db
+from exlibris.database import init_db
+from exlibris.dependencies import get_session
 from exlibris.main import lifespan
 from exlibris.models import Book, ReadingStatus
 
