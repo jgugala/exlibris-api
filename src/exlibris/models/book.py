@@ -4,7 +4,7 @@ from enum import StrEnum
 from sqlalchemy import Enum, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
-from exlibris.database import Base, UTCDateTime
+from exlibris.models.base import Base, UTCDateTime
 
 
 class ReadingStatus(StrEnum):
