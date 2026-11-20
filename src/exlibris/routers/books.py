@@ -12,6 +12,9 @@ from exlibris.services.exceptions import BookNotFoundError, DuplicateIsbnError
 # Ids are positive; the upper bound keeps them within SQLite's 64-bit INTEGER, so
 # out-of-range values fail with 422, not 500.
 BookId = Annotated[int, Path(ge=1, le=2**63 - 1)]
+# Pagination: skip is bounded like BookId so an out-of-range offset fails with 422.
+Skip = Annotated[int, Query(ge=0, le=2**63 - 1)]
+Limit = Annotated[int, Query(ge=1, le=100)]
 
 router = APIRouter(prefix="/books", tags=["books"])
 
@@ -34,8 +37,10 @@ def list_books(
     session: SessionDep,
     # Aliased so the parameter does not shadow the fastapi.status module.
     book_status: Annotated[ReadingStatus | None, Query(alias="status")] = None,
+    skip: Skip = 0,
+    limit: Limit = 20,
 ) -> Sequence[Book]:
-    return books_service.list_books(session, status=book_status)
+    return books_service.list_books(session, status=book_status, skip=skip, limit=limit)
 
 
 @router.get("/{book_id}", response_model=BookRead)

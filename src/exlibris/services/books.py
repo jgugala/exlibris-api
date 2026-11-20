@@ -26,11 +26,20 @@ def create_book(session: Session, data: BookCreate) -> Book:
     return book
 
 
-def list_books(session: Session, status: ReadingStatus | None = None) -> Sequence[Book]:
+def list_books(
+    session: Session,
+    status: ReadingStatus | None = None,
+    skip: int = 0,
+    limit: int | None = None,
+) -> Sequence[Book]:
+    """Books ordered by id; ``limit=None`` means no limit (the API sets its own default).
+
+    The stable ORDER BY is what keeps consecutive pages from overlapping.
+    """
     query = select(Book).order_by(Book.id)
     if status is not None:
         query = query.where(Book.status == status)
-    return session.scalars(query).all()
+    return session.scalars(query.offset(skip).limit(limit)).all()
 
 
 def get_book(session: Session, book_id: int) -> Book:

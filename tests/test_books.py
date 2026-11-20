@@ -91,7 +91,7 @@ def test_list_books_empty_returns_empty_list(client: TestClient) -> None:
     assert response.json() == []
 
 
-def test_list_books_returns_all_ordered_by_id(client: TestClient) -> None:
+def test_list_books_ordered_by_id(client: TestClient) -> None:
     # On SQLite the id is the rowid, so a table scan returns id order even without
     # ORDER BY; this test documents the contract, the order_by matters for PostgreSQL.
     first = client.post("/books", json=book_data(isbn="0306406152")).json()
@@ -124,6 +124,64 @@ def test_list_books_status_without_matches_returns_empty_list(client: TestClient
 
 def test_list_books_unknown_status_returns_422(client: TestClient) -> None:
     response = client.get("/books", params={"status": "foo"})
+
+    assert response.status_code == 422
+
+
+def create_books(client: TestClient, count: int) -> list[int]:
+    """Create ``count`` books with distinct 13-digit ISBNs and return their ids."""
+    return [
+        client.post("/books", json=book_data(isbn=f"{9780000000000 + n}")).json()["id"]
+        for n in range(count)
+    ]
+
+
+def test_list_books_default_page_returns_first_20(client: TestClient) -> None:
+    ids = create_books(client, 25)
+
+    response = client.get("/books")
+
+    assert response.status_code == 200
+    assert [book["id"] for book in response.json()] == ids[:20]
+
+
+def test_list_books_skip_and_limit_return_requested_page(client: TestClient) -> None:
+    ids = create_books(client, 25)
+
+    response = client.get("/books", params={"skip": 20, "limit": 10})
+
+    assert response.status_code == 200
+    assert [book["id"] for book in response.json()] == ids[20:]
+
+
+def test_list_books_skip_past_end_returns_empty_list(client: TestClient) -> None:
+    create_books(client, 3)
+
+    response = client.get("/books", params={"skip": 10})
+
+    assert response.status_code == 200
+    assert response.json() == []
+
+
+def test_list_books_paginates_filtered_results(client: TestClient) -> None:
+    client.post("/books", json=book_data(isbn="9780000000001", status="read"))
+    second = client.post("/books", json=book_data(isbn="9780000000002", status="read")).json()
+    client.post("/books", json=book_data(isbn="9780000000003", status="reading"))
+
+    response = client.get("/books", params={"status": "read", "skip": 1, "limit": 5})
+
+    assert response.status_code == 200
+    assert [book["id"] for book in response.json()] == [second["id"]]
+
+
+@pytest.mark.parametrize(
+    "params",
+    [{"limit": 0}, {"limit": 101}, {"skip": -1}, {"skip": 2**63}, {"limit": "abc"}],
+)
+def test_list_books_invalid_pagination_returns_422(
+    client: TestClient, params: dict[str, Any]
+) -> None:
+    response = client.get("/books", params=params)
 
     assert response.status_code == 422
 
