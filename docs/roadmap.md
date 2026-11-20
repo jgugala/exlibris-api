@@ -38,6 +38,7 @@ Registration, login returning a JWT, `GET /me`. Books stay a shared catalog; per
 - `OAuth2PasswordBearer` and the "Authorize" button in `/docs`.
 - Dependency chain `get_current_user` → `get_admin`; `dependencies=[...]` on the router.
 - `response_model` hiding `password_hash`; relationships between tables.
+- Decide integer vs UUIDv7 primary keys for all tables before adding the new ones (ADR): non-enumerable ids for per-user resources vs. index size and ordering on SQLite.
 - Libraries: `pyjwt`, `pwdlib`.
 - Tooling: sequence diagram of the JWT login flow.
 
