@@ -3,11 +3,12 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from pydantic import ValidationError
 from sqlalchemy.orm import Session
 
 import exlibris.services
 from exlibris.models import Book, ReadingStatus
-from exlibris.schemas import BookCreate, BookUpdate
+from exlibris.schemas import BookCreate, BookFilters, BookUpdate
 from exlibris.services import books as books_service
 from exlibris.services.exceptions import BookNotFoundError, DuplicateIsbnError
 
@@ -91,9 +92,70 @@ def test_list_books_filters_by_status(db_session: Session) -> None:
         db_session, book_create(isbn="9780306406157", status=ReadingStatus.READING)
     )
 
-    result = books_service.list_books(db_session, status=ReadingStatus.READING)
+    result = books_service.list_books(db_session, BookFilters(status=ReadingStatus.READING))
 
     assert [b.id for b in result] == [reading.id]
+
+
+def test_list_books_min_rating_excludes_lower_and_unrated(db_session: Session) -> None:
+    books_service.create_book(db_session, book_create(isbn="9780000000001", rating=2))
+    rated_4 = books_service.create_book(db_session, book_create(isbn="9780000000002", rating=4))
+    books_service.create_book(db_session, book_create(isbn="9780000000003"))
+
+    result = books_service.list_books(db_session, BookFilters(min_rating=3))
+
+    assert [b.id for b in result] == [rated_4.id]
+
+
+def test_list_books_author_is_case_insensitive_substring(db_session: Session) -> None:
+    bloch = books_service.create_book(db_session, book_create(isbn="9780000000001"))
+    books_service.create_book(db_session, book_create(isbn="9780000000002", author="Martin Fowler"))
+
+    result = books_service.list_books(db_session, BookFilters(author="BLOCH"))
+
+    assert [b.id for b in result] == [bloch.id]
+
+
+@pytest.mark.parametrize("wildcard", ["%", "_", "\\"])
+def test_list_books_author_matches_like_wildcards_literally(
+    db_session: Session, wildcard: str
+) -> None:
+    literal = books_service.create_book(
+        db_session, book_create(isbn="9780000000001", author=f"A{wildcard}B")
+    )
+    books_service.create_book(db_session, book_create(isbn="9780000000002", author="AxB"))
+
+    result = books_service.list_books(db_session, BookFilters(author=f"a{wildcard}b"))
+
+    assert [b.id for b in result] == [literal.id]
+
+
+def test_list_books_combines_filters_with_and(db_session: Session) -> None:
+    match = books_service.create_book(
+        db_session, book_create(isbn="9780000000001", status=ReadingStatus.READ, rating=5)
+    )
+    books_service.create_book(
+        db_session, book_create(isbn="9780000000002", status=ReadingStatus.READ, rating=2)
+    )
+    books_service.create_book(
+        db_session, book_create(isbn="9780000000003", status=ReadingStatus.READING, rating=5)
+    )
+    books_service.create_book(
+        db_session,
+        book_create(isbn="9780000000004", status=ReadingStatus.READ, rating=5, author="Fowler"),
+    )
+
+    result = books_service.list_books(
+        db_session, BookFilters(status=ReadingStatus.READ, min_rating=4, author="bloch")
+    )
+
+    assert [b.id for b in result] == [match.id]
+
+
+@pytest.mark.parametrize("kwargs", [{"author": ""}, {"author": "  "}, {"min_rating": 0}])
+def test_book_filters_invalid_values_raise_on_construction(kwargs: dict[str, Any]) -> None:
+    with pytest.raises(ValidationError):
+        BookFilters(**kwargs)
 
 
 def test_list_books_applies_skip_and_limit(db_session: Session) -> None:

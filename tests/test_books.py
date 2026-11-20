@@ -186,6 +186,80 @@ def test_list_books_invalid_pagination_returns_422(
     assert response.status_code == 422
 
 
+# GET /books filters
+
+
+def test_list_books_min_rating_returns_only_rated_at_least(client: TestClient) -> None:
+    client.post("/books", json=book_data(isbn="9780000000001", rating=2))
+    rated_4 = client.post("/books", json=book_data(isbn="9780000000002", rating=4)).json()
+    client.post("/books", json=book_data(isbn="9780000000003"))
+
+    response = client.get("/books", params={"min_rating": 3})
+
+    assert response.status_code == 200
+    assert [b["id"] for b in response.json()] == [rated_4["id"]]
+
+
+def test_list_books_author_matches_case_insensitive_substring(client: TestClient) -> None:
+    bloch = client.post("/books", json=book_data(isbn="9780000000001")).json()
+    client.post("/books", json=book_data(isbn="9780000000002", author="Martin Fowler"))
+
+    response = client.get("/books", params={"author": "bloch"})
+
+    assert response.status_code == 200
+    assert [b["id"] for b in response.json()] == [bloch["id"]]
+
+
+def test_list_books_status_and_author_combined_with_and(client: TestClient) -> None:
+    both = client.post("/books", json=book_data(isbn="9780000000001", status="read")).json()
+    client.post("/books", json=book_data(isbn="9780000000002", status="reading"))
+    client.post(
+        "/books", json=book_data(isbn="9780000000003", status="read", author="Martin Fowler")
+    )
+
+    response = client.get("/books", params={"status": "read", "author": "bloch"})
+
+    assert response.status_code == 200
+    assert [b["id"] for b in response.json()] == [both["id"]]
+
+
+def test_list_books_paginates_results_filtered_by_author(client: TestClient) -> None:
+    client.post("/books", json=book_data(isbn="9780000000001"))
+    client.post("/books", json=book_data(isbn="9780000000002", author="Martin Fowler"))
+    second = client.post("/books", json=book_data(isbn="9780000000003")).json()
+
+    response = client.get("/books", params={"author": "bloch", "skip": 1, "limit": 1})
+
+    assert response.status_code == 200
+    assert [b["id"] for b in response.json()] == [second["id"]]
+
+
+@pytest.mark.parametrize(
+    "params",
+    [
+        {"min_rating": 0},
+        {"min_rating": 6},
+        {"min_rating": "3.5"},
+        {"status": "foo"},
+        {"author": ""},
+        {"author": "   "},
+        {"author": "x" * 256},
+    ],
+)
+def test_list_books_invalid_filter_returns_422(client: TestClient, params: dict[str, Any]) -> None:
+    response = client.get("/books", params=params)
+
+    assert response.status_code == 422
+
+
+def test_list_books_filters_documented_as_query_parameters(client: TestClient) -> None:
+    parameters = client.get("/openapi.json").json()["paths"]["/books"]["get"]["parameters"]
+
+    query_names = {p["name"] for p in parameters if p["in"] == "query"}
+
+    assert {"status", "min_rating", "author"} <= query_names
+
+
 # GET /books/{book_id}
 
 
