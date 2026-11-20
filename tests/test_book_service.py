@@ -78,7 +78,7 @@ def test_list_books_empty_returns_empty_list(db_session: Session) -> None:
     assert books_service.list_books(db_session) == []
 
 
-def test_list_books_returns_all_ordered_by_id(db_session: Session) -> None:
+def test_list_books_ordered_by_id(db_session: Session) -> None:
     first = books_service.create_book(db_session, book_create(isbn="9780134685991"))
     second = books_service.create_book(db_session, book_create(isbn="9780306406157"))
 
@@ -94,6 +94,17 @@ def test_list_books_filters_by_status(db_session: Session) -> None:
     result = books_service.list_books(db_session, status=ReadingStatus.READING)
 
     assert [b.id for b in result] == [reading.id]
+
+
+def test_list_books_applies_skip_and_limit(db_session: Session) -> None:
+    ids = [
+        books_service.create_book(db_session, book_create(isbn=f"{9780000000000 + n}")).id
+        for n in range(5)
+    ]
+
+    result = books_service.list_books(db_session, skip=1, limit=2)
+
+    assert [b.id for b in result] == ids[1:3]
 
 
 # get_book
