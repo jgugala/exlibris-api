@@ -4,8 +4,8 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from exlibris.models import Book, ReadingStatus
-from exlibris.schemas import BookCreate, BookUpdate
+from exlibris.models import Book
+from exlibris.schemas import BookCreate, BookFilters, BookUpdate
 from exlibris.services.exceptions import BookNotFoundError, DuplicateIsbnError
 
 
@@ -26,19 +26,34 @@ def create_book(session: Session, data: BookCreate) -> Book:
     return book
 
 
+def _escape_like(value: str) -> str:
+    """Escape LIKE wildcards so ``%`` and ``_`` in user input match literally."""
+    return value.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
 def list_books(
     session: Session,
-    status: ReadingStatus | None = None,
+    filters: BookFilters | None = None,
     skip: int = 0,
     limit: int | None = None,
 ) -> Sequence[Book]:
-    """Books ordered by id; ``limit=None`` means no limit (the API sets its own default).
+    """Books matching all given filters, ordered by id.
 
-    The stable ORDER BY is what keeps consecutive pages from overlapping.
+    ``limit=None`` means no limit (the API sets its own default). The stable ORDER BY is
+    what keeps consecutive pages from overlapping.
     """
     query = select(Book).order_by(Book.id)
-    if status is not None:
-        query = query.where(Book.status == status)
+    if filters is not None:
+        if filters.status is not None:
+            query = query.where(Book.status == filters.status)
+        if filters.min_rating is not None:
+            # A NULL rating never satisfies >=, so unrated books are excluded.
+            query = query.where(Book.rating >= filters.min_rating)
+        if filters.author is not None:
+            # On SQLite ilike becomes lower(a) LIKE lower(b), and lower() folds ASCII
+            # only: "łoś" does not match "Łoś". PostgreSQL (stage 7) handles Unicode.
+            pattern = f"%{_escape_like(filters.author)}%"
+            query = query.where(Book.author.ilike(pattern, escape="\\"))
     return session.scalars(query.offset(skip).limit(limit)).all()
 
 
