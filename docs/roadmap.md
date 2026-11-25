@@ -35,6 +35,9 @@ Split into `routers/`, `models/`, `schemas/` and `services/`.
 
 Registration, login returning a JWT, `GET /me`. Books stay a shared catalog; per-user data (reading status, rating, review) moves out of `Book` into per-user tables, starting with a shelf table linking users to books (unique per user and book), so each user sees only their own shelf. `is_admin` flag and an `/admin` router protected as a whole.
 
+- Shelf entries are addressed by book: `/me/shelf/{book_id}`.
+- Catalog access: anyone can read books, adding one requires login, editing and deleting move to `/admin/books` (deleting a book removes its shelf entries).
+- The first admin is granted with a CLI command (`exlibris.cli grant-admin`); registration never creates admins.
 - `OAuth2PasswordBearer` and the "Authorize" button in `/docs`.
 - Dependency chain `get_current_user` → `get_admin`; `dependencies=[...]` on the router.
 - `response_model` hiding `password_hash`; relationships between tables.
