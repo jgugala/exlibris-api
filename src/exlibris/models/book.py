@@ -1,10 +1,9 @@
-from datetime import UTC, datetime
 from enum import StrEnum
 
 from sqlalchemy import Enum, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
-from exlibris.models.base import Base, UTCDateTime
+from exlibris.models.base import Base, TimestampMixin
 
 
 class ReadingStatus(StrEnum):
@@ -13,7 +12,7 @@ class ReadingStatus(StrEnum):
     READ = "read"
 
 
-class Book(Base):
+class Book(TimestampMixin, Base):
     __tablename__ = "books"
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -28,4 +27,3 @@ class Book(Base):
     )
     rating: Mapped[int | None]
     review: Mapped[str | None] = mapped_column(Text)
-    created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=lambda: datetime.now(UTC))
