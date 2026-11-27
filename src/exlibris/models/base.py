@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 
 from sqlalchemy import DateTime, Dialect, TypeDecorator
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 
 class Base(DeclarativeBase):
@@ -29,3 +29,12 @@ class UTCDateTime(TypeDecorator[datetime]):
         if value is not None and value.tzinfo is None:
             value = value.replace(tzinfo=UTC)
         return value
+
+
+class TimestampMixin:
+    """Adds ``created_at``, set in UTC when the row is inserted.
+
+    A mixin rather than a column on Base, so each table opts in explicitly.
+    """
+
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime, default=lambda: datetime.now(UTC))

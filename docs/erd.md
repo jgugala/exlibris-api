@@ -1,6 +1,6 @@
 # Entity-relationship diagram
 
-Stage 1: a single `books` table. `Book` is a shared catalog entry (ADR 0002); `status`, `rating` and `review` move to per-user tables in stage 3.
+`Book` is a shared catalog entry (ADR 0002); `status`, `rating` and `review` move to per-user tables later in stage 3. `users` is not yet related to `books`; the shelf table will link them.
 
 ```mermaid
 erDiagram
@@ -13,6 +13,13 @@ erDiagram
         string status "want_to_read | reading | read, default want_to_read"
         int rating "nullable, 1-5 validated by the API"
         text review "nullable"
+        datetime created_at "UTC"
+    }
+    users {
+        int id PK
+        string email UK "320 chars max, stored lowercase, indexed"
+        string password_hash "Argon2id, 255 chars max"
+        bool is_admin "default false"
         datetime created_at "UTC"
     }
 ```

@@ -6,7 +6,7 @@ from sqlalchemy.orm import sessionmaker
 
 from exlibris.config import Settings
 from exlibris.database import init_db
-from exlibris.routers import books, health
+from exlibris.routers import auth, books, health
 
 
 @asynccontextmanager
@@ -22,4 +22,5 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(title="Ex Libris API", version="0.1.0", lifespan=lifespan)
 app.include_router(health.router)
+app.include_router(auth.router)
 app.include_router(books.router)
